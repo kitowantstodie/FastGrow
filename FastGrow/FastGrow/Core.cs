@@ -5,7 +5,7 @@ using MelonLoader.Utils;
 using UnityEngine;
 using UnityObject = UnityEngine.Object;
 
-[assembly: MelonInfo(typeof(FastGrow.Core), "FastGrow", "1.0.1", "Xaender")]
+[assembly: MelonInfo(typeof(FastGrow.Core), "FastGrow", "1.0.2", "Xaender")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace FastGrow
