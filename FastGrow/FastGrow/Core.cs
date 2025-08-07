@@ -1,0 +1,62 @@
+﻿using HarmonyLib;
+using Il2CppScheduleOne.Growing;
+using MelonLoader;
+using MelonLoader.Utils;
+using UnityEngine;
+using UnityObject = UnityEngine.Object;
+
+[assembly: MelonInfo(typeof(FastGrow.Core), "FastGrow", "1.0.1", "Xaender")]
+[assembly: MelonGame("TVGS", "Schedule I")]
+
+namespace FastGrow
+{
+    public class Core : MelonMod
+    {
+        private static MelonPreferences_Entry<float> growthMultiplier;
+
+        [HarmonyPatch(typeof(Plant), "Initialize")]
+        private class PlantPatch
+        {
+            private static void Postfix(Plant __instance)
+            {
+                __instance.GrowthTime = (int)(__instance.GrowthTime * growthMultiplier.Value);
+            }
+        }
+
+        public override void OnInitializeMelon()
+        {
+            string configPath = Path.Combine(MelonEnvironment.UserDataDirectory, "FastGrow.ini");
+
+            bool categoryCreated = false;
+            if (!File.Exists(configPath))
+            {
+                categoryCreated = true;
+            }
+
+            var category = MelonPreferences.CreateCategory("FastGrow", "FastGrow Settings");
+            growthMultiplier = category.CreateEntry(
+                "GrowthMultiplier",
+                0.25f,
+                "Growth Multiplier",
+                "Lower = faster. 0.25 = 4x faster."
+            );
+
+            if (categoryCreated)
+                LoggerInstance.Msg("Created new configuration category for FastGrow.");
+            else
+                LoggerInstance.Msg("Config loaded successfully.");
+
+            UnityObject.DontDestroyOnLoad(new GameObject("FastGrow"));
+
+            var harmony = new HarmonyLib.Harmony("com.xaender.fastgrow");
+            harmony.PatchAll();
+
+            MelonPreferences.Save();
+        }
+
+        public override void OnDeinitializeMelon()
+        {
+            LoggerInstance.Msg("FastGrow deinitialized.");
+        }
+    }
+}
