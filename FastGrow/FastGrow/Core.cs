@@ -25,13 +25,6 @@ namespace FastGrow
 
         public override void OnInitializeMelon()
         {
-            string configPath = Path.Combine(MelonEnvironment.UserDataDirectory, "FastGrow.ini");
-
-            bool categoryCreated = false;
-            if (!File.Exists(configPath))
-            {
-                categoryCreated = true;
-            }
 
             var category = MelonPreferences.CreateCategory("FastGrow", "FastGrow Settings");
             growthMultiplier = category.CreateEntry(
@@ -40,11 +33,6 @@ namespace FastGrow
                 "Growth Multiplier",
                 "Lower = faster. 0.25 = 4x faster."
             );
-
-            if (categoryCreated)
-                LoggerInstance.Msg("Created new configuration category for FastGrow.");
-            else
-                LoggerInstance.Msg("Config loaded successfully.");
 
             UnityObject.DontDestroyOnLoad(new GameObject("FastGrow"));
 
