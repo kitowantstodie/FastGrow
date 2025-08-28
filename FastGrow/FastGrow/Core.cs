@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using System.Collections.Generic;
 using Il2CppScheduleOne.Growing;
 using MelonLoader;
 using UnityEngine;
@@ -13,37 +14,46 @@ namespace FastGrow
         private static MelonPreferences_Entry<float> growthMultiplier;
 
         /// <summary>
-        /// Patches the MinPass method to apply growth multiplier safely
+        /// Scale MinPass growth result by 1/multiplier to ensure exact perceived speed.
+        /// This avoids modifying GrowthTime and works for existing plants.
         /// </summary>
         [HarmonyPatch(typeof(Plant), "MinPass")]
-        private class PlantMinPassPatch
+        private class PlantMinPassScalePatch
         {
-            private static float _originalMultiplier;
+            private static readonly Dictionary<int, float> _previousProgressByPlantId = new Dictionary<int, float>();
 
             private static void Prefix(Plant __instance)
             {
-                if (__instance.Pot == null)
-                    return;
-
-                // Store the original multiplier and apply our growth multiplier
-                _originalMultiplier = __instance.Pot.GrowSpeedMultiplier;
-                float safeMultiplier = Mathf.Clamp(growthMultiplier.Value, 0.01f, 100f);
-
-                // Ensure we don't create invalid multipliers
-                if (float.IsNaN(safeMultiplier) || float.IsInfinity(safeMultiplier))
-                {
-                    safeMultiplier = 1.0f;
-                }
-
-                __instance.Pot.GrowSpeedMultiplier *= safeMultiplier;
+                _previousProgressByPlantId[__instance.GetInstanceID()] = __instance.NormalizedGrowthProgress;
             }
 
             private static void Postfix(Plant __instance)
             {
-                // Safety check and restore the original multiplier
-                if (__instance.Pot != null)
+                int id = __instance.GetInstanceID();
+                if (!_previousProgressByPlantId.TryGetValue(id, out float previous))
+                    return;
+                _previousProgressByPlantId.Remove(id);
+
+                if (__instance.NormalizedGrowthProgress >= 1f)
+                    return;
+
+                float delta = __instance.NormalizedGrowthProgress - previous;
+                if (delta == 0f)
+                    return;
+
+                float safeMultiplier = Mathf.Clamp(growthMultiplier.Value, 0.01f, 100f);
+                if (float.IsNaN(safeMultiplier) || float.IsInfinity(safeMultiplier))
+                    safeMultiplier = 1f;
+
+                float scale = 1f / safeMultiplier; // 0.05 -> 20x
+                if (Mathf.Approximately(scale, 1f))
+                    return;
+
+                float desiredDelta = delta * scale;
+                float newProgress = Mathf.Clamp(previous + desiredDelta, 0f, 1f);
+                if (!Mathf.Approximately(newProgress, __instance.NormalizedGrowthProgress))
                 {
-                    __instance.Pot.GrowSpeedMultiplier = _originalMultiplier;
+                    __instance.SetNormalizedGrowthProgress(newProgress);
                 }
             }
         }
