@@ -4,7 +4,7 @@ using Il2CppScheduleOne.Growing;
 using MelonLoader;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(FastGrow.Core), "FastGrow", "1.0.3", "Xaender & Bars")]
+[assembly: MelonInfo(typeof(FastGrow.Core), "FastGrow", "1.0.3", "Kito & Bars")]
 [assembly: MelonGame("TVGS", "Schedule I")]
 
 namespace FastGrow
